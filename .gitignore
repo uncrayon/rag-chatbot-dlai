@@ -36,3 +36,15 @@ Thumbs.db
 # promts
 prompts/
 ./prompts/
+
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+
+# mypy
+.mypy_cache/
+
+# Ruff
+.ruff_cache/

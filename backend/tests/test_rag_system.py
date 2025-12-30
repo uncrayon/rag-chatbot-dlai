@@ -2,11 +2,12 @@
 Tests for RAG System integration
 Tests cover: end-to-end query processing, session management, and tool orchestration
 """
-import pytest
-from unittest.mock import MagicMock, patch
+
+from unittest.mock import MagicMock
+
+from models import Course, Lesson
 from rag_system import RAGSystem
 from vector_store import SearchResults
-from models import Course, Lesson
 
 
 def test_query_general_knowledge(mocker, test_config):
@@ -21,9 +22,9 @@ def test_query_general_knowledge(mocker, test_config):
     mock_client = MagicMock()
     mock_client.messages.create.return_value = mock_response
 
-    mocker.patch('anthropic.Anthropic', return_value=mock_client)
-    mocker.patch('rag_system.VectorStore')
-    mocker.patch('rag_system.DocumentProcessor')
+    mocker.patch("anthropic.Anthropic", return_value=mock_client)
+    mocker.patch("rag_system.VectorStore")
+    mocker.patch("rag_system.DocumentProcessor")
 
     # Execute
     rag = RAGSystem(test_config)
@@ -57,21 +58,21 @@ def test_query_course_specific(mocker, test_config):
     mock_client = MagicMock()
     mock_client.messages.create.side_effect = [tool_use_response, text_response]
 
-    mocker.patch('anthropic.Anthropic', return_value=mock_client)
+    mocker.patch("anthropic.Anthropic", return_value=mock_client)
 
     # Mock VectorStore
     mock_vector_store = MagicMock()
     search_results = SearchResults(
         documents=["Prompt engineering content"],
-        metadata=[{'course_title': 'Test Course', 'lesson_number': 1}],
+        metadata=[{"course_title": "Test Course", "lesson_number": 1}],
         distances=[0.1],
-        error=None
+        error=None,
     )
     mock_vector_store.search.return_value = search_results
     mock_vector_store.get_lesson_link.return_value = "https://example.com/lesson1"
 
-    mocker.patch('rag_system.VectorStore', return_value=mock_vector_store)
-    mocker.patch('rag_system.DocumentProcessor')
+    mocker.patch("rag_system.VectorStore", return_value=mock_vector_store)
+    mocker.patch("rag_system.DocumentProcessor")
 
     # Execute
     rag = RAGSystem(test_config)
@@ -99,9 +100,9 @@ def test_query_with_session(mocker, test_config):
     mock_client = MagicMock()
     mock_client.messages.create.return_value = mock_response
 
-    mocker.patch('anthropic.Anthropic', return_value=mock_client)
-    mocker.patch('rag_system.VectorStore')
-    mocker.patch('rag_system.DocumentProcessor')
+    mocker.patch("anthropic.Anthropic", return_value=mock_client)
+    mocker.patch("rag_system.VectorStore")
+    mocker.patch("rag_system.DocumentProcessor")
 
     # Execute
     rag = RAGSystem(test_config)
@@ -129,9 +130,9 @@ def test_query_no_session(mocker, test_config):
     mock_client = MagicMock()
     mock_client.messages.create.return_value = mock_response
 
-    mocker.patch('anthropic.Anthropic', return_value=mock_client)
-    mocker.patch('rag_system.VectorStore')
-    mocker.patch('rag_system.DocumentProcessor')
+    mocker.patch("anthropic.Anthropic", return_value=mock_client)
+    mocker.patch("rag_system.VectorStore")
+    mocker.patch("rag_system.DocumentProcessor")
 
     # Execute
     rag = RAGSystem(test_config)
@@ -162,21 +163,21 @@ def test_sources_returned(mocker, test_config):
     mock_client = MagicMock()
     mock_client.messages.create.side_effect = [tool_use_response, text_response]
 
-    mocker.patch('anthropic.Anthropic', return_value=mock_client)
+    mocker.patch("anthropic.Anthropic", return_value=mock_client)
 
     # Mock VectorStore with sources
     mock_vector_store = MagicMock()
     search_results = SearchResults(
         documents=["Content"],
-        metadata=[{'course_title': 'Test Course', 'lesson_number': 1}],
+        metadata=[{"course_title": "Test Course", "lesson_number": 1}],
         distances=[0.1],
-        error=None
+        error=None,
     )
     mock_vector_store.search.return_value = search_results
     mock_vector_store.get_lesson_link.return_value = "https://example.com/lesson1"
 
-    mocker.patch('rag_system.VectorStore', return_value=mock_vector_store)
-    mocker.patch('rag_system.DocumentProcessor')
+    mocker.patch("rag_system.VectorStore", return_value=mock_vector_store)
+    mocker.patch("rag_system.DocumentProcessor")
 
     # Execute
     rag = RAGSystem(test_config)
@@ -185,8 +186,8 @@ def test_sources_returned(mocker, test_config):
     # Verify sources format
     assert isinstance(sources, list)
     if len(sources) > 0:
-        assert 'text' in sources[0]
-        assert 'link' in sources[0]
+        assert "text" in sources[0]
+        assert "link" in sources[0]
 
 
 def test_sources_reset(mocker, test_config):
@@ -209,25 +210,27 @@ def test_sources_reset(mocker, test_config):
 
     mock_client = MagicMock()
     mock_client.messages.create.side_effect = [
-        tool_use_response, text_response,  # First query
-        tool_use_response, text_response   # Second query
+        tool_use_response,
+        text_response,  # First query
+        tool_use_response,
+        text_response,  # Second query
     ]
 
-    mocker.patch('anthropic.Anthropic', return_value=mock_client)
+    mocker.patch("anthropic.Anthropic", return_value=mock_client)
 
     # Mock VectorStore
     mock_vector_store = MagicMock()
     search_results = SearchResults(
         documents=["Content"],
-        metadata=[{'course_title': 'Test Course', 'lesson_number': 1}],
+        metadata=[{"course_title": "Test Course", "lesson_number": 1}],
         distances=[0.1],
-        error=None
+        error=None,
     )
     mock_vector_store.search.return_value = search_results
     mock_vector_store.get_lesson_link.return_value = "https://example.com/lesson1"
 
-    mocker.patch('rag_system.VectorStore', return_value=mock_vector_store)
-    mocker.patch('rag_system.DocumentProcessor')
+    mocker.patch("rag_system.VectorStore", return_value=mock_vector_store)
+    mocker.patch("rag_system.DocumentProcessor")
 
     # Execute two queries
     rag = RAGSystem(test_config)
@@ -252,9 +255,9 @@ def test_session_updated_after_query(mocker, test_config):
     mock_client = MagicMock()
     mock_client.messages.create.return_value = mock_response
 
-    mocker.patch('anthropic.Anthropic', return_value=mock_client)
-    mocker.patch('rag_system.VectorStore')
-    mocker.patch('rag_system.DocumentProcessor')
+    mocker.patch("anthropic.Anthropic", return_value=mock_client)
+    mocker.patch("rag_system.VectorStore")
+    mocker.patch("rag_system.DocumentProcessor")
 
     # Execute
     rag = RAGSystem(test_config)
@@ -286,9 +289,9 @@ def test_multiple_queries_same_session(mocker, test_config):
     mock_client = MagicMock()
     mock_client.messages.create.side_effect = [mock_response1, mock_response2]
 
-    mocker.patch('anthropic.Anthropic', return_value=mock_client)
-    mocker.patch('rag_system.VectorStore')
-    mocker.patch('rag_system.DocumentProcessor')
+    mocker.patch("anthropic.Anthropic", return_value=mock_client)
+    mocker.patch("rag_system.VectorStore")
+    mocker.patch("rag_system.DocumentProcessor")
 
     # Execute
     rag = RAGSystem(test_config)
@@ -324,20 +327,15 @@ def test_query_with_empty_results(mocker, test_config):
     mock_client = MagicMock()
     mock_client.messages.create.side_effect = [tool_use_response, text_response]
 
-    mocker.patch('anthropic.Anthropic', return_value=mock_client)
+    mocker.patch("anthropic.Anthropic", return_value=mock_client)
 
     # Mock VectorStore with empty results
     mock_vector_store = MagicMock()
-    empty_results = SearchResults(
-        documents=[],
-        metadata=[],
-        distances=[],
-        error=None
-    )
+    empty_results = SearchResults(documents=[], metadata=[], distances=[], error=None)
     mock_vector_store.search.return_value = empty_results
 
-    mocker.patch('rag_system.VectorStore', return_value=mock_vector_store)
-    mocker.patch('rag_system.DocumentProcessor')
+    mocker.patch("rag_system.VectorStore", return_value=mock_vector_store)
+    mocker.patch("rag_system.DocumentProcessor")
 
     # Execute
     rag = RAGSystem(test_config)
@@ -368,20 +366,17 @@ def test_query_with_search_error(mocker, test_config):
     mock_client = MagicMock()
     mock_client.messages.create.side_effect = [tool_use_response, text_response]
 
-    mocker.patch('anthropic.Anthropic', return_value=mock_client)
+    mocker.patch("anthropic.Anthropic", return_value=mock_client)
 
     # Mock VectorStore with error
     mock_vector_store = MagicMock()
     error_results = SearchResults(
-        documents=[],
-        metadata=[],
-        distances=[],
-        error="Database connection failed"
+        documents=[], metadata=[], distances=[], error="Database connection failed"
     )
     mock_vector_store.search.return_value = error_results
 
-    mocker.patch('rag_system.VectorStore', return_value=mock_vector_store)
-    mocker.patch('rag_system.DocumentProcessor')
+    mocker.patch("rag_system.VectorStore", return_value=mock_vector_store)
+    mocker.patch("rag_system.DocumentProcessor")
 
     # Execute
     rag = RAGSystem(test_config)
@@ -393,9 +388,9 @@ def test_query_with_search_error(mocker, test_config):
 
 def test_tool_manager_registration(mocker, test_config):
     """Test tools properly registered"""
-    mocker.patch('anthropic.Anthropic')
-    mocker.patch('rag_system.VectorStore')
-    mocker.patch('rag_system.DocumentProcessor')
+    mocker.patch("anthropic.Anthropic")
+    mocker.patch("rag_system.VectorStore")
+    mocker.patch("rag_system.DocumentProcessor")
 
     # Execute
     rag = RAGSystem(test_config)
@@ -405,9 +400,9 @@ def test_tool_manager_registration(mocker, test_config):
     assert len(tool_defs) == 2
 
     # Verify CourseSearchTool registered
-    tool_names = [tool['name'] for tool in tool_defs]
-    assert 'search_course_content' in tool_names
-    assert 'get_course_outline' in tool_names
+    tool_names = [tool["name"] for tool in tool_defs]
+    assert "search_course_content" in tool_names
+    assert "get_course_outline" in tool_names
 
 
 def test_query_uses_outline_tool(mocker, test_config):
@@ -431,24 +426,26 @@ def test_query_uses_outline_tool(mocker, test_config):
     mock_client = MagicMock()
     mock_client.messages.create.side_effect = [tool_use_response, text_response]
 
-    mocker.patch('anthropic.Anthropic', return_value=mock_client)
+    mocker.patch("anthropic.Anthropic", return_value=mock_client)
 
     # Mock VectorStore with course catalog
     mock_vector_store = MagicMock()
     mock_vector_store.course_catalog.query.return_value = {
-        'documents': [['Course description']],
-        'metadatas': [[{'title': 'Introduction to Prompt Engineering'}]]
+        "documents": [["Course description"]],
+        "metadatas": [[{"title": "Introduction to Prompt Engineering"}]],
     }
     mock_vector_store.course_catalog.get.return_value = {
-        'metadatas': [{
-            'title': 'Introduction to Prompt Engineering',
-            'course_link': 'https://example.com',
-            'lessons_json': '[{"lesson_number": 1, "lesson_title": "Basics", "lesson_link": "https://example.com/1"}]'
-        }]
+        "metadatas": [
+            {
+                "title": "Introduction to Prompt Engineering",
+                "course_link": "https://example.com",
+                "lessons_json": '[{"lesson_number": 1, "lesson_title": "Basics", "lesson_link": "https://example.com/1"}]',
+            }
+        ]
     }
 
-    mocker.patch('rag_system.VectorStore', return_value=mock_vector_store)
-    mocker.patch('rag_system.DocumentProcessor')
+    mocker.patch("rag_system.VectorStore", return_value=mock_vector_store)
+    mocker.patch("rag_system.DocumentProcessor")
 
     # Execute
     rag = RAGSystem(test_config)
@@ -473,9 +470,9 @@ def test_max_history_limit(mocker, test_config):
     mock_client = MagicMock()
     mock_client.messages.create.side_effect = mock_responses
 
-    mocker.patch('anthropic.Anthropic', return_value=mock_client)
-    mocker.patch('rag_system.VectorStore')
-    mocker.patch('rag_system.DocumentProcessor')
+    mocker.patch("anthropic.Anthropic", return_value=mock_client)
+    mocker.patch("rag_system.VectorStore")
+    mocker.patch("rag_system.DocumentProcessor")
 
     # Execute multiple queries
     rag = RAGSystem(test_config)
@@ -504,9 +501,9 @@ def test_concurrent_sessions(mocker, test_config):
     mock_client = MagicMock()
     mock_client.messages.create.return_value = mock_response
 
-    mocker.patch('anthropic.Anthropic', return_value=mock_client)
-    mocker.patch('rag_system.VectorStore')
-    mocker.patch('rag_system.DocumentProcessor')
+    mocker.patch("anthropic.Anthropic", return_value=mock_client)
+    mocker.patch("rag_system.VectorStore")
+    mocker.patch("rag_system.DocumentProcessor")
 
     # Execute
     rag = RAGSystem(test_config)
@@ -528,8 +525,8 @@ def test_concurrent_sessions(mocker, test_config):
 
 def test_integration_with_document_processing(mocker, test_config):
     """Test full pipeline from document to query"""
-    mocker.patch('anthropic.Anthropic')
-    mocker.patch('rag_system.VectorStore')
+    mocker.patch("anthropic.Anthropic")
+    mocker.patch("rag_system.VectorStore")
 
     # Mock DocumentProcessor
     mock_processor = MagicMock()
@@ -538,12 +535,14 @@ def test_integration_with_document_processing(mocker, test_config):
         course_link="https://example.com",
         instructor="Test Instructor",
         lessons=[
-            Lesson(lesson_number=1, title="Lesson 1", lesson_link="https://example.com/1")
-        ]
+            Lesson(
+                lesson_number=1, title="Lesson 1", lesson_link="https://example.com/1"
+            )
+        ],
     )
     mock_processor.process_course_document.return_value = (mock_course, [])
 
-    mocker.patch('rag_system.DocumentProcessor', return_value=mock_processor)
+    mocker.patch("rag_system.DocumentProcessor", return_value=mock_processor)
 
     # Execute
     rag = RAGSystem(test_config)

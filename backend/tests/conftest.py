@@ -1,15 +1,15 @@
-import pytest
-from unittest.mock import MagicMock, Mock
-from typing import List, Dict, Any
-import sys
 import os
+import sys
+from unittest.mock import MagicMock
+
+import pytest
 
 # Add backend to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from vector_store import SearchResults
-from models import Course, Lesson, CourseChunk
 from config import Config
+from models import Course, CourseChunk, Lesson
+from vector_store import SearchResults
 
 
 @pytest.fixture
@@ -35,14 +35,14 @@ def sample_course():
             Lesson(
                 lesson_number=1,
                 title="Basics",
-                lesson_link="https://example.com/lesson1"
+                lesson_link="https://example.com/lesson1",
             ),
             Lesson(
                 lesson_number=2,
                 title="Advanced Techniques",
-                lesson_link="https://example.com/lesson2"
+                lesson_link="https://example.com/lesson2",
             ),
-        ]
+        ],
     )
 
 
@@ -54,14 +54,14 @@ def sample_course_chunks(sample_course):
             content="Lesson 1 content: Prompt engineering is the art of crafting effective prompts.",
             course_title=sample_course.title,
             lesson_number=1,
-            chunk_index=0
+            chunk_index=0,
         ),
         CourseChunk(
             content="Advanced techniques include chain of thought reasoning.",
             course_title=sample_course.title,
             lesson_number=2,
-            chunk_index=1
-        )
+            chunk_index=1,
+        ),
     ]
 
 
@@ -71,44 +71,36 @@ def sample_search_results():
     return SearchResults(
         documents=[
             "Lesson 1 content: Prompt engineering is the art of crafting effective prompts.",
-            "Advanced techniques include chain of thought reasoning."
+            "Advanced techniques include chain of thought reasoning.",
         ],
         metadata=[
             {
-                'course_title': 'Introduction to Prompt Engineering',
-                'lesson_number': 1,
-                'chunk_index': 0
+                "course_title": "Introduction to Prompt Engineering",
+                "lesson_number": 1,
+                "chunk_index": 0,
             },
             {
-                'course_title': 'Introduction to Prompt Engineering',
-                'lesson_number': 2,
-                'chunk_index': 1
-            }
+                "course_title": "Introduction to Prompt Engineering",
+                "lesson_number": 2,
+                "chunk_index": 1,
+            },
         ],
         distances=[0.1, 0.2],
-        error=None
+        error=None,
     )
 
 
 @pytest.fixture
 def empty_search_results():
     """Empty search results"""
-    return SearchResults(
-        documents=[],
-        metadata=[],
-        distances=[],
-        error=None
-    )
+    return SearchResults(documents=[], metadata=[], distances=[], error=None)
 
 
 @pytest.fixture
 def error_search_results():
     """Search results with error"""
     return SearchResults(
-        documents=[],
-        metadata=[],
-        distances=[],
-        error="Database connection failed"
+        documents=[], metadata=[], distances=[], error="Database connection failed"
     )
 
 
@@ -119,15 +111,16 @@ def mock_vector_store(sample_search_results):
     mock.search.return_value = sample_search_results
     mock.get_lesson_link.return_value = "https://example.com/lesson1"
     mock.get_course_count.return_value = 5
-    mock.get_existing_course_titles.return_value = ["Introduction to Prompt Engineering"]
+    mock.get_existing_course_titles.return_value = [
+        "Introduction to Prompt Engineering"
+    ]
     return mock
 
 
 @pytest.fixture
 def mock_anthropic_client():
     """Mock Anthropic client for API calls"""
-    mock = MagicMock()
-    return mock
+    return MagicMock()
 
 
 @pytest.fixture
@@ -144,7 +137,7 @@ def mock_tool_use_response():
     tool_use_block.input = {
         "query": "What is prompt engineering?",
         "course_name": None,
-        "lesson_number": None
+        "lesson_number": None,
     }
 
     mock.content = [tool_use_block]
@@ -160,7 +153,9 @@ def mock_text_response():
     # Create mock text content block
     text_block = MagicMock()
     text_block.type = "text"
-    text_block.text = "Prompt engineering is the art of crafting effective prompts for AI systems."
+    text_block.text = (
+        "Prompt engineering is the art of crafting effective prompts for AI systems."
+    )
 
     mock.content = [text_block]
     return mock
@@ -184,6 +179,6 @@ def mock_tool_manager():
     mock.get_last_sources.return_value = []
     mock.get_tool_definitions.return_value = [
         {"name": "search_course_content", "description": "Search course content"},
-        {"name": "get_course_outline", "description": "Get course outline"}
+        {"name": "get_course_outline", "description": "Get course outline"},
     ]
     return mock

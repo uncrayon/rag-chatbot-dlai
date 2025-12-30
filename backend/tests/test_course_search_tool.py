@@ -2,9 +2,8 @@
 Tests for CourseSearchTool.execute() method
 Tests cover: basic search, filters, error handling, formatting, and source tracking
 """
-import pytest
-from unittest.mock import MagicMock
-from search_tools import CourseSearchTool, ToolManager
+
+from search_tools import CourseSearchTool
 from vector_store import SearchResults
 
 
@@ -19,9 +18,7 @@ def test_execute_basic_query(mock_vector_store, sample_search_results):
 
     # Verify VectorStore.search called correctly
     mock_vector_store.search.assert_called_once_with(
-        query="What is prompt engineering?",
-        course_name=None,
-        lesson_number=None
+        query="What is prompt engineering?", course_name=None, lesson_number=None
     )
 
     # Verify result format
@@ -30,7 +27,9 @@ def test_execute_basic_query(mock_vector_store, sample_search_results):
 
     # Verify sources tracked
     assert len(tool.last_sources) == 2
-    assert tool.last_sources[0]['text'] == "Introduction to Prompt Engineering - Lesson 1"
+    assert (
+        tool.last_sources[0]["text"] == "Introduction to Prompt Engineering - Lesson 1"
+    )
 
 
 def test_execute_with_course_name_filter(mock_vector_store, sample_search_results):
@@ -42,14 +41,14 @@ def test_execute_with_course_name_filter(mock_vector_store, sample_search_result
     # Execute
     result = tool.execute(
         query="What is prompt engineering?",
-        course_name="Introduction to Prompt Engineering"
+        course_name="Introduction to Prompt Engineering",
     )
 
     # Verify course_name passed to search
     mock_vector_store.search.assert_called_once_with(
         query="What is prompt engineering?",
         course_name="Introduction to Prompt Engineering",
-        lesson_number=None
+        lesson_number=None,
     )
 
     # Verify results returned
@@ -63,16 +62,11 @@ def test_execute_with_lesson_number_filter(mock_vector_store, sample_search_resu
     mock_vector_store.search.return_value = sample_search_results
 
     # Execute
-    result = tool.execute(
-        query="What is prompt engineering?",
-        lesson_number=1
-    )
+    result = tool.execute(query="What is prompt engineering?", lesson_number=1)
 
     # Verify lesson_number passed to search
     mock_vector_store.search.assert_called_once_with(
-        query="What is prompt engineering?",
-        course_name=None,
-        lesson_number=1
+        query="What is prompt engineering?", course_name=None, lesson_number=1
     )
 
     # Verify results returned
@@ -89,14 +83,14 @@ def test_execute_with_combined_filters(mock_vector_store, sample_search_results)
     result = tool.execute(
         query="What is prompt engineering?",
         course_name="Introduction to Prompt Engineering",
-        lesson_number=1
+        lesson_number=1,
     )
 
     # Verify both filters applied
     mock_vector_store.search.assert_called_once_with(
         query="What is prompt engineering?",
         course_name="Introduction to Prompt Engineering",
-        lesson_number=1
+        lesson_number=1,
     )
 
     # Verify results returned
@@ -127,24 +121,16 @@ def test_execute_empty_results_with_filters(mock_vector_store, empty_search_resu
     mock_vector_store.search.return_value = empty_search_results
 
     # Execute with course filter
-    result1 = tool.execute(
-        query="nonexistent",
-        course_name="Some Course"
-    )
+    result1 = tool.execute(query="nonexistent", course_name="Some Course")
     assert "No relevant content found in course 'Some Course'" in result1
 
     # Execute with lesson filter
-    result2 = tool.execute(
-        query="nonexistent",
-        lesson_number=5
-    )
+    result2 = tool.execute(query="nonexistent", lesson_number=5)
     assert "No relevant content found in lesson 5" in result2
 
     # Execute with both filters
     result3 = tool.execute(
-        query="nonexistent",
-        course_name="Some Course",
-        lesson_number=5
+        query="nonexistent", course_name="Some Course", lesson_number=5
     )
     assert "No relevant content found in course 'Some Course' in lesson 5" in result3
 
@@ -176,11 +162,11 @@ def test_format_results_with_lessons(mock_vector_store, sample_search_results):
     assert "[Introduction to Prompt Engineering - Lesson 2]" in result
 
     # Verify content follows header
-    lines = result.split('\n')
+    lines = result.split("\n")
     # Find the header line and verify content is on next line
     for i, line in enumerate(lines):
         if "[Introduction to Prompt Engineering - Lesson 1]" in line:
-            assert "Prompt engineering is the art" in lines[i+1]
+            assert "Prompt engineering is the art" in lines[i + 1]
 
 
 def test_format_results_with_links(mock_vector_store, sample_search_results):
@@ -191,14 +177,14 @@ def test_format_results_with_links(mock_vector_store, sample_search_results):
     mock_vector_store.get_lesson_link.return_value = "https://example.com/lesson1"
 
     # Execute
-    result = tool.execute(query="test")
+    tool.execute(query="test")
 
     # Verify get_lesson_link called for lessons
     assert mock_vector_store.get_lesson_link.called
 
     # Verify sources contain links
     assert len(tool.last_sources) == 2
-    assert tool.last_sources[0]['link'] == "https://example.com/lesson1"
+    assert tool.last_sources[0]["link"] == "https://example.com/lesson1"
 
 
 def test_last_sources_tracking(mock_vector_store, sample_search_results):
@@ -214,12 +200,16 @@ def test_last_sources_tracking(mock_vector_store, sample_search_results):
     assert len(tool.last_sources) == 2
 
     # Verify source structure
-    assert 'text' in tool.last_sources[0]
-    assert 'link' in tool.last_sources[0]
+    assert "text" in tool.last_sources[0]
+    assert "link" in tool.last_sources[0]
 
     # Verify source content
-    assert tool.last_sources[0]['text'] == "Introduction to Prompt Engineering - Lesson 1"
-    assert tool.last_sources[1]['text'] == "Introduction to Prompt Engineering - Lesson 2"
+    assert (
+        tool.last_sources[0]["text"] == "Introduction to Prompt Engineering - Lesson 1"
+    )
+    assert (
+        tool.last_sources[1]["text"] == "Introduction to Prompt Engineering - Lesson 2"
+    )
 
 
 def test_multiple_documents_formatting(mock_vector_store):
@@ -229,15 +219,15 @@ def test_multiple_documents_formatting(mock_vector_store):
         documents=[
             "First document content.",
             "Second document content.",
-            "Third document content."
+            "Third document content.",
         ],
         metadata=[
-            {'course_title': 'Course A', 'lesson_number': 1},
-            {'course_title': 'Course B', 'lesson_number': 2},
-            {'course_title': 'Course C', 'lesson_number': 3}
+            {"course_title": "Course A", "lesson_number": 1},
+            {"course_title": "Course B", "lesson_number": 2},
+            {"course_title": "Course C", "lesson_number": 3},
         ],
         distances=[0.1, 0.2, 0.3],
-        error=None
+        error=None,
     )
 
     tool = CourseSearchTool(mock_vector_store)
@@ -269,7 +259,7 @@ def test_metadata_missing_fields(mock_vector_store):
             {}  # Missing course_title and lesson_number
         ],
         distances=[0.1],
-        error=None
+        error=None,
     )
 
     tool = CourseSearchTool(mock_vector_store)

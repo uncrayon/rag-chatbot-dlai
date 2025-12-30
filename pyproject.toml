@@ -16,9 +16,177 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    # Testing
     "httpx==0.28.1",
     "pytest==8.3.4",
     "pytest-asyncio==0.24.0",
     "pytest-cov==6.0.0",
     "pytest-mock==3.14.0",
+    # Code Quality
+    "ruff>=0.8.4",
+    "mypy>=1.14.0",
+    "pre-commit>=4.0.1",
+    "types-requests>=2.32.0",
+]
+
+# Ruff Configuration
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "env",
+    "ENV",
+    "chroma_db",
+    ".pytest_cache",
+    "dist",
+    "build",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort (import sorting)
+    "N",      # pep8-naming
+    "UP",     # pyupgrade (modernize Python code)
+    "ANN",    # flake8-annotations (type hints)
+    "ASYNC",  # flake8-async
+    "S",      # flake8-bandit (security)
+    "B",      # flake8-bugbear (common bugs)
+    "A",      # flake8-builtins
+    "C4",     # flake8-comprehensions
+    "DTZ",    # flake8-datetimez
+    "T10",    # flake8-debugger
+    "EM",     # flake8-errmsg
+    "FA",     # flake8-future-annotations
+    "ISC",    # flake8-implicit-str-concat
+    "ICN",    # flake8-import-conventions
+    "G",      # flake8-logging-format
+    "PIE",    # flake8-pie
+    "PT",     # flake8-pytest-style
+    "Q",      # flake8-quotes
+    "RSE",    # flake8-raise
+    "RET",    # flake8-return
+    "SIM",    # flake8-simplify
+    "TID",    # flake8-tidy-imports
+    "ARG",    # flake8-unused-arguments
+    "PTH",    # flake8-use-pathlib
+    "ERA",    # eradicate (commented-out code)
+    "PL",     # pylint
+    "RUF",    # Ruff-specific rules
+]
+
+ignore = [
+    "ANN401",  # Dynamically typed expressions (Any) - FastAPI uses these
+    "S101",    # Use of assert - pytest uses these
+    "PLR0913", # Too many arguments - API endpoints may need this
+    "PLR2004", # Magic value comparison - config values are fine
+    "PLR0912", # Too many branches - document processor has complex parsing
+    "PLR0915", # Too many statements - document processor has complex parsing
+    "S311",    # Random for cryptographic use - not applicable
+    "E501",    # Line too long - many docstrings/prompts exceed 88 chars
+    "E402",    # Module import not at top - needed for warning filters
+    "PTH",     # Use pathlib - not critical for current functionality
+    "PLC0415", # Import outside top level - sometimes needed
+    "RUF009",  # Function call in dataclass defaults - needed for config
+]
+
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"backend/tests/**/*.py" = [
+    "S105",    # Hardcoded password (test fixtures)
+    "S106",    # Hardcoded password in argument
+    "PLR2004", # Magic values in tests are fine
+    "ANN",     # All type annotation rules - tests can be relaxed
+    "PT017",   # pytest-assert-in-except
+]
+"backend/tests/conftest.py" = ["ANN"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["backend"]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+# mypy Configuration
+[tool.mypy]
+python_version = "3.13"
+# Relaxed strict mode for gradual typing adoption
+strict = false
+warn_return_any = false
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+disallow_untyped_decorators = false
+warn_redundant_casts = true
+warn_unused_ignores = false
+warn_no_return = true
+warn_unreachable = true
+strict_equality = false
+
+# Enable specific useful checks
+no_implicit_optional = true
+
+files = ["backend/**/*.py"]
+exclude = [
+    "backend/chroma_db",
+    "backend/tests",
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "chromadb.*",
+    "sentence_transformers.*",
+    "anthropic.*",
+    "fastapi.*",
+    "starlette.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "backend.tests.*"
+disallow_untyped_defs = false
+
+# pytest Configuration
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "--cov=.",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--cov-fail-under=70",
+]
+
+asyncio_mode = "auto"
+
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
 ]

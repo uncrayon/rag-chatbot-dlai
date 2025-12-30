@@ -101,3 +101,42 @@ Requires `.env` with:
 ```
 ANTHROPIC_API_KEY=your_key_here
 ```
+
+## Code Quality
+
+This project uses modern Python quality tools:
+
+**Tools:**
+- `ruff` - Fast linter and formatter (replaces Black, isort, Flake8)
+- `mypy` - Static type checking
+- `pytest` - Testing with coverage
+- `pre-commit` - Git hooks
+
+**Commands:**
+
+```bash
+# Format code
+./scripts/format.sh
+
+# Lint code
+./scripts/lint.sh
+
+# Type check
+./scripts/typecheck.sh
+
+# Run tests
+./scripts/test.sh
+
+# Run all checks
+./scripts/check-all.sh
+
+# Install git hooks (one-time setup)
+uv run pre-commit install
+
+# Run pre-commit on all files
+uv run pre-commit run --all-files
+```
+
+**Configuration files:**
+- `pyproject.toml` - Tool configurations
+- `.pre-commit-config.yaml` - Git hooks

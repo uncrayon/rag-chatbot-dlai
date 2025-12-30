@@ -1,9 +1,15 @@
+from typing import TYPE_CHECKING, Any
+
 import anthropic
-from typing import List, Optional, Dict, Any
+from anthropic.types import Message
+
+if TYPE_CHECKING:
+    from search_tools import ToolManager
+
 
 class AIGenerator:
     """Handles interactions with Anthropic's Claude API for generating responses"""
-    
+
     # Static system prompt to avoid rebuilding on each call
     SYSTEM_PROMPT = """ You are an AI assistant specialized in course materials and educational content with access to tools for course information.
 
@@ -41,18 +47,16 @@ Provide only the direct answer to what was asked.
     # Maximum sequential tool-calling rounds per query
     MAX_TOOL_ROUNDS = 2
 
-    def __init__(self, api_key: str, model: str):
+    def __init__(self, api_key: str, model: str) -> None:
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
-        
-        # Pre-build base API parameters
-        self.base_params = {
-            "model": self.model,
-            "temperature": 0,
-            "max_tokens": 800
-        }
 
-    def _execute_all_tools(self, response, tool_manager) -> List[Dict[str, Any]]:
+        # Pre-build base API parameters
+        self.base_params = {"model": self.model, "temperature": 0, "max_tokens": 800}
+
+    def _execute_all_tools(
+        self, response: Message, tool_manager: "ToolManager"
+    ) -> list[dict[str, Any]]:
         """
         Execute all tool calls from a response and return formatted results.
 
@@ -69,26 +73,30 @@ Provide only the direct answer to what was asked.
             if content_block.type == "tool_use":
                 # Execute tool
                 result = tool_manager.execute_tool(
-                    content_block.name,
-                    **content_block.input
+                    content_block.name, **content_block.input
                 )
 
                 # Check if result indicates error
-                is_error = result.startswith("Error:") or result.startswith("Tool '")
+                is_error = result.startswith(("Error:", "Tool '"))
 
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": content_block.id,
-                    "content": result,
-                    "is_error": is_error
-                })
+                tool_results.append(
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": content_block.id,
+                        "content": result,
+                        "is_error": is_error,
+                    }
+                )
 
         return tool_results
 
-    def generate_response(self, query: str,
-                         conversation_history: Optional[str] = None,
-                         tools: Optional[List] = None,
-                         tool_manager=None) -> str:
+    def generate_response(
+        self,
+        query: str,
+        conversation_history: str | None = None,
+        tools: list | None = None,
+        tool_manager: "ToolManager | None" = None,
+    ) -> str:
         """
         Generate AI response with optional tool usage and conversation context.
         Supports up to MAX_TOOL_ROUNDS sequential tool-calling rounds.
@@ -120,7 +128,7 @@ Provide only the direct answer to what was asked.
             api_params = {
                 **self.base_params,
                 "messages": messages.copy(),
-                "system": system_content
+                "system": system_content,
             }
 
             # Add tools if available
@@ -145,15 +153,19 @@ Provide only the direct answer to what was asked.
             except Exception as e:
                 # Tool execution failed - add error result and break
                 messages.append({"role": "assistant", "content": response.content})
-                messages.append({
-                    "role": "user",
-                    "content": [{
-                        "type": "tool_result",
-                        "tool_use_id": response.content[0].id,
-                        "content": f"Tool execution failed: {str(e)}",
-                        "is_error": True
-                    }]
-                })
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": response.content[0].id,
+                                "content": f"Tool execution failed: {e!s}",
+                                "is_error": True,
+                            }
+                        ],
+                    }
+                )
                 break
 
             # Add assistant's tool use to messages
@@ -170,7 +182,7 @@ Provide only the direct answer to what was asked.
         final_params = {
             **self.base_params,
             "messages": messages.copy(),
-            "system": system_content
+            "system": system_content,
         }
 
         final_response = self.client.messages.create(**final_params)
