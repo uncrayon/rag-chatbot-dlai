@@ -7,6 +7,12 @@ let currentSessionId = null;
 // DOM elements
 let chatMessages, chatInput, sendButton, totalCourses, courseTitles;
 
+// Initialize theme before DOM loads to prevent flash
+(function initThemeEarly() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+})();
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     // Get DOM elements after page loads
@@ -15,8 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
     sendButton = document.getElementById('sendButton');
     totalCourses = document.getElementById('totalCourses');
     courseTitles = document.getElementById('courseTitles');
-    
+
     setupEventListeners();
+    initThemeToggle();
     createNewSession();
     loadCourseStats();
 });
@@ -43,6 +50,37 @@ function setupEventListeners() {
     const newChatButton = document.getElementById('newChatButton');
     if (newChatButton) {
         newChatButton.addEventListener('click', handleNewChat);
+    }
+}
+
+// Theme Toggle Functions
+function initThemeToggle() {
+    const themeToggle = document.getElementById('themeToggle');
+    if (!themeToggle) return;
+
+    // Click event
+    themeToggle.addEventListener('click', toggleTheme);
+
+    // Keyboard events (Enter and Space)
+    themeToggle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleTheme();
+        }
+    });
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+
+    // Update aria-label for accessibility
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.setAttribute('aria-label', `Switch to ${currentTheme} theme`);
     }
 }
 
