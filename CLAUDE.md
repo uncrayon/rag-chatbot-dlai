@@ -101,3 +101,94 @@ Requires `.env` with:
 ```
 ANTHROPIC_API_KEY=your_key_here
 ```
+
+## Testing
+
+The project includes a comprehensive test suite with 70+ tests covering unit, integration, and API layers.
+
+### Test Structure
+
+```
+backend/tests/
+├── conftest.py              # Shared fixtures for all tests
+├── test_ai_generator.py     # Unit tests for Claude API wrapper (23 tests)
+├── test_course_search_tool.py # Unit tests for search tools (12 tests)
+├── test_rag_system.py       # Integration tests for RAG orchestration (15 tests)
+└── test_api_endpoints.py    # API endpoint tests with TestClient (21 tests)
+```
+
+### Running Tests
+
+**Always use `uv run pytest` - the pytest configuration is in pyproject.toml.**
+
+```bash
+# Run all tests (71 tests, ~0.7s)
+uv run pytest
+
+# Run only API endpoint tests (21 tests)
+uv run pytest -m api
+
+# Run only unit tests
+uv run pytest -m unit
+
+# Run integration tests
+uv run pytest -m integration
+
+# Run specific test file
+uv run pytest backend/tests/test_api_endpoints.py
+
+# Run with coverage report
+uv run pytest --cov=backend --cov-report=term-missing
+
+# Run with HTML coverage report
+uv run pytest --cov=backend --cov-report=html
+# Then open: htmlcov/index.html
+
+# Verbose output (show all test names)
+uv run pytest -vv
+
+# Stop on first failure
+uv run pytest -x
+
+# Run tests excluding slow tests
+uv run pytest -m "not slow"
+
+# Explicitly target Python 3.13
+uv run --python 3.13 pytest
+```
+
+### Test Markers
+
+Tests are organized with pytest markers for selective execution:
+
+- `@pytest.mark.unit` - Fast, isolated unit tests for individual components
+- `@pytest.mark.integration` - Tests for component interaction
+- `@pytest.mark.api` - API endpoint tests using FastAPI TestClient
+- `@pytest.mark.slow` - Tests that take significant time to run
+
+### Test Coverage
+
+- **API Layer** (test_api_endpoints.py): All three FastAPI endpoints (/api/query, /api/courses, /api/session/{session_id}), request/response validation, error handling, CORS
+- **RAG System** (test_rag_system.py): Query processing, session management, tool orchestration, source tracking
+- **AI Generator** (test_ai_generator.py): Tool execution loop, conversation history, multi-round tool calls
+- **Search Tools** (test_course_search_tool.py): Course content search, filters, result formatting
+
+### Writing Tests
+
+The test suite uses FastAPI's TestClient for API tests and unittest.mock for mocking dependencies:
+
+```python
+import pytest
+from fastapi import status
+
+@pytest.mark.api
+def test_query_endpoint_success(client, valid_query_request):
+    """Test successful query with session ID"""
+    response = client.post("/api/query", json=valid_query_request)
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert "answer" in data
+    assert "sources" in data
+```
+
+All fixtures are defined in `conftest.py` and automatically available to all tests.

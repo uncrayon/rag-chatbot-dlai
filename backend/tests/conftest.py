@@ -10,6 +10,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from vector_store import SearchResults
 from models import Course, Lesson, CourseChunk
 from config import Config
+from fastapi.testclient import TestClient
+from app import create_app
+from rag_system import RAGSystem
 
 
 @pytest.fixture
@@ -187,3 +190,89 @@ def mock_tool_manager():
         {"name": "get_course_outline", "description": "Get course outline"}
     ]
     return mock
+
+
+# ============================================================================
+# API TESTING FIXTURES
+# ============================================================================
+
+@pytest.fixture
+def mock_rag_system(mock_vector_store, mock_session_manager, mock_tool_manager):
+    """Mock RAGSystem for API tests"""
+    mock_rag = MagicMock(spec=RAGSystem)
+
+    # Configure default responses
+    mock_rag.query.return_value = (
+        "This is a test response about prompt engineering.",
+        [{"text": "Introduction to Prompt Engineering - Lesson 1",
+          "link": "https://example.com/lesson1"}]
+    )
+
+    mock_rag.get_course_analytics.return_value = {
+        "total_courses": 3,
+        "course_titles": [
+            "Introduction to Prompt Engineering",
+            "Advanced Claude Techniques",
+            "MCP Protocol Guide"
+        ]
+    }
+
+    mock_rag.session_manager = mock_session_manager
+    mock_rag.vector_store = mock_vector_store
+    mock_rag.tool_manager = mock_tool_manager
+
+    return mock_rag
+
+
+@pytest.fixture
+def test_app(mock_rag_system):
+    """Create FastAPI test application with mocked dependencies"""
+    # Create app without static files and startup events
+    app = create_app(mount_static=False, skip_startup=True)
+
+    # Override the global rag_system with our mock
+    import app as app_module
+    original_rag = app_module.rag_system
+    app_module.rag_system = mock_rag_system
+
+    yield app
+
+    # Cleanup: restore original
+    app_module.rag_system = original_rag
+
+
+@pytest.fixture
+def client(test_app):
+    """FastAPI TestClient for making HTTP requests in tests"""
+    with TestClient(test_app) as test_client:
+        yield test_client
+
+
+@pytest.fixture
+def valid_query_request():
+    """Valid QueryRequest payload"""
+    return {
+        "query": "What is prompt engineering?",
+        "session_id": "test_session_123"
+    }
+
+
+@pytest.fixture
+def query_request_without_session():
+    """QueryRequest without session_id"""
+    return {"query": "Explain Claude's capabilities"}
+
+
+@pytest.fixture
+def invalid_query_request():
+    """Invalid QueryRequest (missing required field)"""
+    return {"session_id": "test_session_123"}  # Missing 'query'
+
+
+@pytest.fixture
+def empty_query_request():
+    """QueryRequest with empty query string"""
+    return {
+        "query": "",
+        "session_id": "test_session_123"
+    }
