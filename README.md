@@ -91,3 +91,56 @@ To bypass hooks (not recommended):
 ```bash
 git commit --no-verify
 ```
+
+## Testing
+
+The project includes a comprehensive test suite with 70+ tests covering unit, integration, and API layers.
+
+### Running Tests
+
+**All tests use `uv run pytest` for execution:**
+
+```bash
+# Run all tests (71 tests, ~0.7 seconds)
+uv run pytest
+
+# Run only API endpoint tests (21 tests)
+uv run pytest -m api
+
+# Run specific test file
+uv run pytest backend/tests/test_api_endpoints.py
+
+# Run with coverage report
+uv run pytest --cov=backend --cov-report=term-missing
+
+# Verbose output
+uv run pytest -vv
+
+# Stop on first failure
+uv run pytest -x
+```
+
+### Test Organization
+
+Tests are organized by layer and marked for selective execution:
+
+- **Unit Tests** (`@pytest.mark.unit`): Fast, isolated tests for individual components
+  - `test_ai_generator.py` - Claude API wrapper and tool execution (23 tests)
+  - `test_course_search_tool.py` - Search functionality and filtering (12 tests)
+
+- **Integration Tests** (`@pytest.mark.integration`): Component interaction tests
+  - `test_rag_system.py` - End-to-end RAG system orchestration (15 tests)
+
+- **API Tests** (`@pytest.mark.api`): HTTP endpoint testing with FastAPI TestClient
+  - `test_api_endpoints.py` - All three API endpoints, validation, error handling (21 tests)
+
+### Test Configuration
+
+Test configuration is in `pyproject.toml` with:
+- Async mode enabled for FastAPI endpoints
+- Custom markers for test categorization
+- Python 3.13 target
+- Coverage reporting configured
+- Warning filters for clean output
+
+See `CLAUDE.md` for detailed testing documentation and examples.

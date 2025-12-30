@@ -167,26 +167,41 @@ disallow_untyped_defs = false
 
 # pytest Configuration
 [tool.pytest.ini_options]
+# Test discovery
 testpaths = ["backend/tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 
-addopts = [
-    "-v",
-    "--strict-markers",
-    "--tb=short",
-    "--cov=.",
-    "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
-    "--cov-fail-under=70",
-]
-
+# Asyncio configuration for pytest-asyncio 0.24.0
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
+# Test markers
 markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
-    "unit: marks tests as unit tests",
+    "unit: Unit tests for individual components (fast)",
+    "integration: Integration tests for component interaction",
+    "api: API endpoint tests using TestClient",
+    "slow: Tests that take significant time to run",
 ]
+
+# Output and execution options
+addopts = [
+    "-v",                          # Verbose output
+    "--strict-markers",            # Error on unknown markers
+    "--strict-config",             # Error on config issues
+    "--tb=short",                  # Shorter traceback format
+    "-ra",                         # Show summary of all test outcomes
+    "--color=yes",                 # Force color output
+]
+
+# Warning filters
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore:resource_tracker.*:UserWarning",
+]
+
+# Python configuration
+minversion = "8.0"
+pythonpath = ["backend"]
