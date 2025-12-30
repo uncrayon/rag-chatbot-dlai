@@ -32,3 +32,6 @@ Thumbs.db
 
 # MCP Servers
 .playwright-mcp/
+
+# promts
+./promts/
