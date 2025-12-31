@@ -3,14 +3,16 @@ API Endpoint Tests for FastAPI application
 Tests cover: POST /api/query, GET /api/courses, DELETE /api/session/{session_id}
 Uses FastAPI TestClient with mocked RAGSystem dependencies
 """
-import pytest
-from fastapi import status
+
 from unittest.mock import patch
 
+import pytest
+from fastapi import status
 
 # ============================================================================
 # POST /api/query ENDPOINT TESTS
 # ============================================================================
+
 
 @pytest.mark.api
 def test_query_endpoint_success(client, mock_rag_system, valid_query_request):
@@ -29,16 +31,13 @@ def test_query_endpoint_success(client, mock_rag_system, valid_query_request):
 
     # Verify RAGSystem called correctly
     mock_rag_system.query.assert_called_once_with(
-        "What is prompt engineering?",
-        "test_session_123"
+        "What is prompt engineering?", "test_session_123"
     )
 
 
 @pytest.mark.api
 def test_query_endpoint_creates_session_when_missing(
-    client,
-    mock_rag_system,
-    query_request_without_session
+    client, mock_rag_system, query_request_without_session
 ):
     """Test that endpoint creates session ID if not provided"""
     # Setup: mock session creation
@@ -72,7 +71,8 @@ def test_query_endpoint_validation_error(client, invalid_query_request):
 
 
 @pytest.mark.api
-def test_query_endpoint_empty_query(client, empty_query_request, mock_rag_system):
+@pytest.mark.usefixtures("mock_rag_system")
+def test_query_endpoint_empty_query(client, empty_query_request):
     """Test behavior with empty query string"""
     # Execute
     response = client.post("/api/query", json=empty_query_request)
@@ -82,17 +82,17 @@ def test_query_endpoint_empty_query(client, empty_query_request, mock_rag_system
 
 
 @pytest.mark.api
-def test_query_endpoint_handles_rag_exception(client, test_app):
+@pytest.mark.usefixtures("test_app")
+def test_query_endpoint_handles_rag_exception(client):
     """Test error handling when RAGSystem raises exception"""
     # Patch the global rag_system to raise an exception
-    with patch('app.rag_system') as mock_rag:
+    with patch("app.rag_system") as mock_rag:
         mock_rag.query.side_effect = Exception("Vector store unavailable")
         mock_rag.session_manager.create_session.return_value = "session_err"
 
-        response = client.post("/api/query", json={
-            "query": "Test query",
-            "session_id": "test_session"
-        })
+        response = client.post(
+            "/api/query", json={"query": "Test query", "session_id": "test_session"}
+        )
 
         # Should return 500 error
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -110,14 +110,13 @@ def test_query_endpoint_with_sources(client, mock_rag_system):
         "Response with sources",
         [
             {"text": "Course 1 - Lesson 1", "link": "https://example.com/1"},
-            {"text": "Course 1 - Lesson 2", "link": "https://example.com/2"}
-        ]
+            {"text": "Course 1 - Lesson 2", "link": "https://example.com/2"},
+        ],
     )
 
-    response = client.post("/api/query", json={
-        "query": "Test with sources",
-        "session_id": "test_session"
-    })
+    response = client.post(
+        "/api/query", json={"query": "Test with sources", "session_id": "test_session"}
+    )
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -134,17 +133,16 @@ def test_query_endpoint_preserves_conversation_context(client, mock_rag_system):
     session_id = "context_session_789"
 
     # First query
-    response1 = client.post("/api/query", json={
-        "query": "What is prompt engineering?",
-        "session_id": session_id
-    })
+    response1 = client.post(
+        "/api/query",
+        json={"query": "What is prompt engineering?", "session_id": session_id},
+    )
     assert response1.status_code == status.HTTP_200_OK
 
     # Second query in same session
-    response2 = client.post("/api/query", json={
-        "query": "Can you elaborate?",
-        "session_id": session_id
-    })
+    response2 = client.post(
+        "/api/query", json={"query": "Can you elaborate?", "session_id": session_id}
+    )
     assert response2.status_code == status.HTTP_200_OK
 
     # Verify both used same session
@@ -158,6 +156,7 @@ def test_query_endpoint_preserves_conversation_context(client, mock_rag_system):
 # GET /api/courses ENDPOINT TESTS
 # ============================================================================
 
+
 @pytest.mark.api
 def test_get_courses_success(client, mock_rag_system):
     """Test successful retrieval of course statistics"""
@@ -169,10 +168,18 @@ def test_get_courses_success(client, mock_rag_system):
 
     data = response.json()
     assert "total_courses" in data
-    assert "course_titles" in data
+    assert "courses" in data
     assert data["total_courses"] == 3
-    assert len(data["course_titles"]) == 3
-    assert "Introduction to Prompt Engineering" in data["course_titles"]
+    assert len(data["courses"]) == 3
+
+    # Verify course structure
+    course_titles = [c["title"] for c in data["courses"]]
+    assert "Introduction to Prompt Engineering" in course_titles
+
+    # Verify all courses have required fields
+    for course in data["courses"]:
+        assert "title" in course
+        assert "first_lesson_link" in course
 
     # Verify RAGSystem called
     mock_rag_system.get_course_analytics.assert_called_once()
@@ -184,7 +191,7 @@ def test_get_courses_empty_catalog(client, mock_rag_system):
     # Configure mock for empty state
     mock_rag_system.get_course_analytics.return_value = {
         "total_courses": 0,
-        "course_titles": []
+        "courses": [],
     }
 
     response = client.get("/api/courses")
@@ -192,14 +199,16 @@ def test_get_courses_empty_catalog(client, mock_rag_system):
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert data["total_courses"] == 0
-    assert data["course_titles"] == []
+    assert data["courses"] == []
 
 
 @pytest.mark.api
 def test_get_courses_handles_exception(client):
     """Test error handling when analytics fails"""
-    with patch('app.rag_system') as mock_rag:
-        mock_rag.get_course_analytics.side_effect = Exception("ChromaDB not initialized")
+    with patch("app.rag_system") as mock_rag:
+        mock_rag.get_course_analytics.side_effect = Exception(
+            "ChromaDB not initialized"
+        )
 
         response = client.get("/api/courses")
 
@@ -209,7 +218,8 @@ def test_get_courses_handles_exception(client):
 
 
 @pytest.mark.api
-def test_get_courses_response_schema(client, mock_rag_system):
+@pytest.mark.usefixtures("mock_rag_system")
+def test_get_courses_response_schema(client):
     """Test that response matches CourseStats schema exactly"""
     response = client.get("/api/courses")
 
@@ -217,15 +227,24 @@ def test_get_courses_response_schema(client, mock_rag_system):
     data = response.json()
 
     # Verify exact schema (no extra fields)
-    assert set(data.keys()) == {"total_courses", "course_titles"}
+    assert set(data.keys()) == {"total_courses", "courses"}
     assert isinstance(data["total_courses"], int)
-    assert isinstance(data["course_titles"], list)
-    assert all(isinstance(title, str) for title in data["course_titles"])
+    assert isinstance(data["courses"], list)
+
+    # Verify each course has the correct structure
+    for course in data["courses"]:
+        assert isinstance(course, dict)
+        assert set(course.keys()) == {"title", "first_lesson_link"}
+        assert isinstance(course["title"], str)
+        assert course["first_lesson_link"] is None or isinstance(
+            course["first_lesson_link"], str
+        )
 
 
 # ============================================================================
 # DELETE /api/session/{session_id} ENDPOINT TESTS
 # ============================================================================
+
 
 @pytest.mark.api
 def test_clear_session_success(client, mock_rag_system):
@@ -247,7 +266,8 @@ def test_clear_session_success(client, mock_rag_system):
 
 
 @pytest.mark.api
-def test_clear_nonexistent_session(client, mock_rag_system):
+@pytest.mark.usefixtures("mock_rag_system")
+def test_clear_nonexistent_session(client):
     """Test clearing session that doesn't exist (should succeed silently)"""
     # SessionManager.clear_session handles non-existent sessions gracefully
     response = client.delete("/api/session/nonexistent_session")
@@ -259,8 +279,10 @@ def test_clear_nonexistent_session(client, mock_rag_system):
 @pytest.mark.api
 def test_clear_session_handles_exception(client):
     """Test error handling in session clearing"""
-    with patch('app.rag_system') as mock_rag:
-        mock_rag.session_manager.clear_session.side_effect = Exception("Session DB error")
+    with patch("app.rag_system") as mock_rag:
+        mock_rag.session_manager.clear_session.side_effect = Exception(
+            "Session DB error"
+        )
 
         response = client.delete("/api/session/test_session")
 
@@ -283,19 +305,21 @@ def test_clear_session_with_special_characters(client, mock_rag_system):
 # INTEGRATION TESTS (Multiple Endpoints)
 # ============================================================================
 
+
 @pytest.mark.api
 @pytest.mark.integration
-def test_full_conversation_flow(client, mock_rag_system):
+@pytest.mark.usefixtures("mock_rag_system")
+def test_full_conversation_flow(client):
     """Test complete flow: query → get courses → clear session"""
     # 1. Get available courses
     courses_response = client.get("/api/courses")
     assert courses_response.status_code == status.HTTP_200_OK
 
     # 2. Make a query
-    query_response = client.post("/api/query", json={
-        "query": "Tell me about the first course",
-        "session_id": "flow_session"
-    })
+    query_response = client.post(
+        "/api/query",
+        json={"query": "Tell me about the first course", "session_id": "flow_session"},
+    )
     assert query_response.status_code == status.HTTP_200_OK
     session_id = query_response.json()["session_id"]
 
@@ -311,10 +335,10 @@ def test_concurrent_sessions(client, mock_rag_system):
     sessions = ["session_a", "session_b", "session_c"]
 
     for session_id in sessions:
-        response = client.post("/api/query", json={
-            "query": f"Query for {session_id}",
-            "session_id": session_id
-        })
+        response = client.post(
+            "/api/query",
+            json={"query": f"Query for {session_id}", "session_id": session_id},
+        )
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["session_id"] == session_id
 
@@ -326,10 +350,11 @@ def test_concurrent_sessions(client, mock_rag_system):
 # ERROR RESPONSE FORMAT TESTS
 # ============================================================================
 
+
 @pytest.mark.api
 def test_error_response_format_500(client):
     """Test that 500 errors follow FastAPI HTTPException format"""
-    with patch('app.rag_system') as mock_rag:
+    with patch("app.rag_system") as mock_rag:
         mock_rag.query.side_effect = Exception("Test error")
         mock_rag.session_manager.create_session.return_value = "session"
 
@@ -361,12 +386,11 @@ def test_error_response_format_422(client):
 # CORS AND MIDDLEWARE TESTS
 # ============================================================================
 
+
 @pytest.mark.api
 def test_cors_headers_present(client):
     """Test that CORS headers are present in responses"""
-    response = client.get("/api/courses", headers={
-        "Origin": "http://localhost:3000"
-    })
+    response = client.get("/api/courses", headers={"Origin": "http://localhost:3000"})
 
     # CORS middleware should add headers
     # TestClient might not include all headers, but endpoint should work
@@ -377,13 +401,14 @@ def test_cors_headers_present(client):
 # RESPONSE SCHEMA VALIDATION TESTS
 # ============================================================================
 
+
 @pytest.mark.api
-def test_query_response_schema(client, mock_rag_system):
+@pytest.mark.usefixtures("mock_rag_system")
+def test_query_response_schema(client):
     """Test that QueryResponse matches expected schema"""
-    response = client.post("/api/query", json={
-        "query": "Test query",
-        "session_id": "test_session"
-    })
+    response = client.post(
+        "/api/query", json={"query": "Test query", "session_id": "test_session"}
+    )
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()

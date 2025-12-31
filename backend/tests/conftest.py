@@ -210,10 +210,16 @@ def mock_rag_system(mock_vector_store, mock_session_manager, mock_tool_manager):
 
     mock_rag.get_course_analytics.return_value = {
         "total_courses": 3,
-        "course_titles": [
-            "Introduction to Prompt Engineering",
-            "Advanced Claude Techniques",
-            "MCP Protocol Guide",
+        "courses": [
+            {
+                "title": "Introduction to Prompt Engineering",
+                "first_lesson_link": "https://example.com/lesson1",
+            },
+            {
+                "title": "Advanced Claude Techniques",
+                "first_lesson_link": "https://example.com/advanced-lesson1",
+            },
+            {"title": "MCP Protocol Guide", "first_lesson_link": None},
         ],
     }
 
