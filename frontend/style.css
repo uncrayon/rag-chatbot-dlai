@@ -757,6 +757,9 @@ details[open] .suggested-header::before {
 /* Course titles display */
 .course-titles {
     margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
     /* Remove max-height to show all titles without scrolling */
 }
 
@@ -775,6 +778,34 @@ details[open] .suggested-header::before {
 
 .course-title-item:first-child {
     padding-top: 0.25rem;
+}
+
+/* Course links - styled like source links */
+.course-link {
+    display: block !important;
+    padding: 0.5rem 0.75rem !important;
+    background: var(--background) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    color: var(--text-secondary) !important;
+    font-size: 0.85rem !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease;
+    line-height: 1.4;
+}
+
+.course-link:hover {
+    background: var(--surface-hover) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+}
+
+.course-link:visited {
+    color: var(--text-secondary) !important;
+}
+
+.course-link:visited:hover {
+    color: var(--primary-color) !important;
 }
 
 .no-courses, .loading, .error {
