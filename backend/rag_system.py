@@ -161,7 +161,26 @@ class RAGSystem:
 
     def get_course_analytics(self) -> dict:
         """Get analytics about the course catalog"""
+        courses_metadata = self.vector_store.get_all_courses_metadata()
+
+        # Format courses with title and first lesson link
+        courses = []
+        for course_meta in courses_metadata:
+            course_info = {
+                "title": course_meta.get("title", ""),
+                "first_lesson_link": None
+            }
+
+            # Get the first lesson link if available
+            lessons = course_meta.get("lessons", [])
+            if lessons and len(lessons) > 0:
+                # Find the first lesson (lesson_number 0 or 1)
+                first_lesson = min(lessons, key=lambda x: x.get("lesson_number", float('inf')))
+                course_info["first_lesson_link"] = first_lesson.get("lesson_link")
+
+            courses.append(course_info)
+
         return {
-            "total_courses": self.vector_store.get_course_count(),
-            "course_titles": self.vector_store.get_existing_course_titles(),
+            "total_courses": len(courses),
+            "courses": courses,
         }

@@ -33,11 +33,18 @@ class QueryResponse(BaseModel):
     session_id: str
 
 
+class CourseInfo(BaseModel):
+    """Information about a single course"""
+
+    title: str
+    first_lesson_link: str | None = None
+
+
 class CourseStats(BaseModel):
     """Response model for course statistics"""
 
     total_courses: int
-    course_titles: list[str]
+    courses: list[CourseInfo]
 
 
 def create_app(mount_static: bool = True, skip_startup: bool = False) -> FastAPI:
@@ -96,7 +103,7 @@ def create_app(mount_static: bool = True, skip_startup: bool = False) -> FastAPI
             analytics = rag_system.get_course_analytics()
             return CourseStats(
                 total_courses=analytics["total_courses"],
-                course_titles=analytics["course_titles"],
+                courses=analytics["courses"],
             )
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e)) from e

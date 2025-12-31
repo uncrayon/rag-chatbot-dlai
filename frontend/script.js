@@ -248,9 +248,15 @@ async function loadCourseStats() {
         
         // Update course titles
         if (courseTitles) {
-            if (data.course_titles && data.course_titles.length > 0) {
-                courseTitles.innerHTML = data.course_titles
-                    .map(title => `<div class="course-title-item">${title}</div>`)
+            if (data.courses && data.courses.length > 0) {
+                courseTitles.innerHTML = data.courses
+                    .map(course => {
+                        if (course.first_lesson_link) {
+                            return `<a href="${course.first_lesson_link}" target="_blank" rel="noopener noreferrer" class="course-link">${escapeHtml(course.title)}</a>`;
+                        } else {
+                            return `<div class="course-title-item">${escapeHtml(course.title)}</div>`;
+                        }
+                    })
                     .join('');
             } else {
                 courseTitles.innerHTML = '<span class="no-courses">No courses available</span>';
